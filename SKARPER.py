@@ -1,46 +1,65 @@
-from importlib.util import source_hash
-from itertools import count
-
-from ping3 import *
-subnet_1 = 192
-subnet_2 = 168
-subnet_3 = 1
-subnet_4 = 0
-entity = "192.168.3.11"
-status = True
+from ping3 import ping
+import socket
 
 
-def ip_to_str():
-    ip_str = str(subnet_1) + "." + str(subnet_2) + "." + str(subnet_3) + "." + str(subnet_4)
-    return(ip_str)
+target = ""
+
+def get_subnet_prefix():
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    return '.'.join(local_ip.split('.')[:3]) + '.'
 
 
-def entire_scan(subnet_4):
-    running_ips = 0
+def scan_network(subnet_prefix, timeout=1):
+    print("Scanning local network...")
+    alive_ips = []
 
-    while subnet_4 <= 255:
-        if (subnet_4 <= 255):
-            print(ip_to_str() + " detected")
-            running_ips += 1
-            subnet_4 += 1
+    for ip_suffix in range(256):
+        ip = f"{subnet_prefix}{ip_suffix}"
+        try:
+            response_time = ping(ip, timeout=timeout)
+            if response_time is not None:
+                print(f"{ip} -> alive ({response_time:.3f}s)")
+                alive_ips.append(ip)
+            else:
+                print(f"{ip} -> not detected")
+        except Exception as e:
+            print(f"{ip} -> error: {e}")
+
+    print(f"\nFound {len(alive_ips)} active hosts.")
+    return alive_ips
+
+def single_target(target):
+        target_ip = f"{target}"
+        target_status = ping(target_ip)
+        if target_status:
+            print("target" + f"({target_ip})"+ " is online")
         else:
-            print( ip_to_str()+ "... not found")
-            subnet_4 += 1
-    print(running_ips)
-
-print("------------Welcome to SKARPER -----------")
-
-verbose_ping ('google.com', count= 10)
+            print("target was not detected")
 
 
+def main():
+    print("------------Welcome to SKARPER -----------")
+
+    subnet = get_subnet_prefix()
+    local_ip = socket.gethostbyname(socket.gethostname())
+
+    print(f"Local IP:    {local_ip}")
+    print(f"Subnet:      {subnet}0-255")
+    print(f"Scannable:   {subnet}0-255")
+
+    print("\nOptions:")
+    print("1) Single target scan")
+    print("2) Entire local network scan")
+
+    choice = input("\nEnter choice (1 or 2): ").strip()
+
+    if choice == "2":
+        scan_network(subnet)
+    else:
+        target = input("\nEnter target to scan: ").strip()
+        single_target(target)
 
 
-
-
-
-entire_scan(subnet_4)
-'''while status:
-    ip_str = str(subnet_1) + "." + str(subnet_2) +"."+ str(subnet_3) +"." +  str(subnet_4)
-    verbose_ping (ip_to_str(), timeout= 1)
-    subnet_4 = subnet_4 + 1
-'''
+if __name__ == "__main__":
+    main()
