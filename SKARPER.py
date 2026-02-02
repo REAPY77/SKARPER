@@ -1,3 +1,5 @@
+from asyncio import timeout
+
 from ping3 import ping
 import socket
 
@@ -31,9 +33,12 @@ def scan_network(subnet_prefix, timeout=1):
 
 def single_target(target):
         target_ip = f"{target}"
-        target_status = ping(target_ip)
-        if target_status:
-            print("target" + f"({target_ip})"+ " is online")
+        timeout = 1
+        target_status = ping(target_ip, timeout=timeout)
+        if target_status <= timeout:
+            print("target " + f"({target_ip})"+ " has been detected")
+            print("STATUS: ONLINE")
+            print("TIME: "+ f"{round((target_status * 1000.0))} ms")
         else:
             print("target was not detected")
 
@@ -47,18 +52,21 @@ def main():
     print(f"Local IP:    {local_ip}")
     print(f"Subnet:      {subnet}0-255")
     print(f"Scannable:   {subnet}0-255")
+    while True:
+        print("\nOptions:")
+        print("1) Single target scan")
+        print("2) Entire local network scan")
 
-    print("\nOptions:")
-    print("1) Single target scan")
-    print("2) Entire local network scan")
+        choice = input("\nEnter choice (1 or 2 & 3 for exit): ").strip()
 
-    choice = input("\nEnter choice (1 or 2): ").strip()
+        if choice == "2":
+            scan_network(subnet)
+        elif choice =="1":
+            target = input("\nEnter target to scan: ").strip()
+            single_target(target)
+        else:
+            break
 
-    if choice == "2":
-        scan_network(subnet)
-    else:
-        target = input("\nEnter target to scan: ").strip()
-        single_target(target)
 
 
 if __name__ == "__main__":
